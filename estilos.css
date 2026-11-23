@@ -1,0 +1,151 @@
+/* Mi Espacio — prototipo. Datos ficticios. Paleta oficial + Playfair/Nunito (D-30). */
+:root{
+  --blanco:#F7F4F2; --rosa:#D8A7B1; --negro:#111111; --salvia:#7D8F82;
+  --rosa20:#F1E5E5; --rosa35:#ECD9DB; --salvia15:#E5E5E1;
+  --tinta:#111111; --tinta2:rgba(17,17,17,.74); --linea:rgba(17,17,17,.35);
+  --linea-fuerte:rgba(17,17,17,.6);
+  --serif:"Playfair Display",Georgia,serif; --sans:"Nunito Sans",system-ui,Arial,sans-serif;
+  --r:16px; --r-s:12px; --sombra:0 2px 10px rgba(17,17,17,.06);
+  --max:1180px;
+}
+*{box-sizing:border-box}
+html{font-size:17px}
+body{margin:0;font-family:var(--sans);color:var(--tinta);background:var(--blanco);line-height:1.6}
+h1,h2,h3{font-family:var(--serif);font-weight:600;line-height:1.2;margin:0}
+h1{font-size:2rem} h2{font-size:1.4rem} h3{font-size:1.1rem}
+a{color:inherit}
+img{max-width:100%;display:block}
+button{font-family:inherit;font-size:1rem;cursor:pointer}
+:focus-visible{outline:2px solid var(--negro);outline-offset:2px;border-radius:4px}
+.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* Aviso de prototipo */
+.proto-aviso{background:var(--negro);color:var(--blanco);text-align:center;
+  font-size:.8rem;padding:6px 12px}
+
+/* Layout */
+.app{min-height:100vh;display:flex;flex-direction:column}
+.cuerpo{flex:1;display:flex;max-width:var(--max);width:100%;margin:0 auto}
+.lateral{display:none}
+.principal{flex:1;min-width:0;padding:18px 16px 96px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  max-width:var(--max);margin:0 auto;width:100%;padding:12px 16px}
+.marca{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-weight:600}
+.marca img{width:34px;height:34px}
+.topbar-acc{display:flex;gap:8px;align-items:center}
+.icono-btn{background:var(--rosa20);border:1px solid var(--linea);border-radius:50%;
+  width:40px;height:40px;display:grid;place-items:center}
+.salida{background:var(--blanco);border:1px solid var(--linea-fuerte);border-radius:999px;
+  padding:7px 12px;font-size:.82rem;font-weight:600}
+
+/* Nav inferior (móvil) */
+.nav-inf{position:fixed;bottom:0;left:0;right:0;background:var(--blanco);
+  border-top:1px solid var(--linea);display:flex;justify-content:space-around;
+  padding:6px 4px env(safe-area-inset-bottom);z-index:20}
+.nav-inf a{flex:1;text-align:center;text-decoration:none;color:var(--tinta2);
+  font-size:.68rem;padding:6px 2px;border-radius:10px;display:flex;flex-direction:column;
+  align-items:center;gap:3px}
+.nav-inf a.activo{color:var(--negro);background:var(--rosa20)}
+.nav-inf svg{width:22px;height:22px}
+
+/* Tarjetas */
+.card{background:#fff;border:1px solid var(--linea);border-radius:var(--r);
+  padding:16px;box-shadow:var(--sombra);margin-bottom:14px}
+.card.destacada{background:var(--rosa20);border-color:transparent}
+.card.suave{background:var(--salvia15);border-color:transparent}
+.etq{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:700;
+  background:var(--salvia15);color:var(--tinta);border-radius:999px;padding:3px 10px}
+.etq.rosa{background:var(--rosa35)}
+.tenue{color:var(--tinta2)}
+.mini{font-size:.82rem}
+.sep{height:1px;background:var(--linea);margin:14px 0;border:0}
+
+/* Botones */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  background:var(--rosa);color:var(--negro);border:1px solid var(--linea-fuerte);
+  border-radius:999px;padding:11px 18px;font-weight:700;text-decoration:none}
+.btn.bloque{width:100%}
+.btn.sec{background:#fff}
+.btn.texto{background:transparent;border-color:transparent;text-decoration:underline}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--linea-fuerte);background:#fff;border-radius:999px;
+  padding:7px 14px;font-size:.9rem}
+.chip[aria-pressed="true"]{background:var(--salvia15);border-color:var(--negro)}
+
+/* Formularios */
+label{display:block;font-weight:700;margin:14px 0 6px}
+.op{font-weight:400;color:var(--tinta2);font-size:.85rem}
+input[type=text],input[type=email],input[type=password],textarea,select{
+  width:100%;font:inherit;padding:11px 12px;border:1px solid var(--linea-fuerte);
+  border-radius:var(--r-s);background:#fff;color:var(--tinta)}
+textarea{min-height:120px;resize:vertical}
+
+/* Encabezado de pantalla */
+.enc{margin-bottom:12px}
+.enc h1{margin-bottom:4px}
+
+/* Inicio */
+.banner{border-radius:var(--r);overflow:hidden;position:relative;margin-bottom:14px}
+.banner img{width:100%;height:150px;object-fit:cover;object-position:left center}
+.pilares .fila{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:9px 0;border-bottom:1px solid var(--linea)}
+.pilares .fila:last-child{border-bottom:0}
+.barra{height:8px;background:var(--rosa20);border-radius:999px;overflow:hidden;flex:1;max-width:120px}
+.barra i{display:block;height:100%;background:var(--salvia)}
+.accesos{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.accesos a{text-decoration:none;background:#fff;border:1px solid var(--linea);
+  border-radius:var(--r-s);padding:12px 8px;text-align:center;font-weight:700;font-size:.82rem}
+
+/* Lista diario */
+.entrada{display:flex;justify-content:space-between;gap:12px;align-items:center;
+  padding:12px 0;border-bottom:1px solid var(--linea);text-decoration:none}
+.entrada:last-child{border-bottom:0}
+
+/* Onboarding */
+.ob{position:fixed;inset:0;background:var(--blanco);z-index:40;display:flex;
+  flex-direction:column;padding:20px;max-width:520px;margin:0 auto}
+.ob-img{flex:0 0 auto;text-align:center}
+.ob-img img{max-height:40vh;margin:0 auto}
+.ob-cont{flex:1;display:flex;flex-direction:column;justify-content:center}
+.ob-puntos{display:flex;gap:6px;justify-content:center;margin:12px 0}
+.ob-puntos span{width:8px;height:8px;border-radius:50%;background:var(--rosa20)}
+.ob-puntos span.on{background:var(--rosa)}
+.ob-acc{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:16px}
+.lista-priv{list-style:none;padding:0;margin:0}
+.lista-priv li{padding:10px 0;border-bottom:1px solid var(--linea);display:flex;gap:10px}
+.lista-priv li:last-child{border-bottom:0}
+.aviso-seg{background:var(--salvia15);border-radius:var(--r-s);padding:12px;margin-top:10px}
+
+/* Construcción */
+.stub{background:var(--rosa20);border-radius:var(--r);padding:24px 16px;text-align:center}
+.rotulo{font-size:.72rem;font-weight:700;color:var(--tinta2);text-transform:uppercase;letter-spacing:.04em}
+
+/* Panel de Diana */
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  max-width:var(--max);margin:0 auto;width:100%;padding:12px 16px;background:var(--rosa35)}
+.panel-head .marca{font-size:1.05rem}
+.tabs{display:flex;gap:6px;overflow:auto;border-bottom:1px solid var(--linea);margin-bottom:14px}
+.tabs a{text-decoration:none;color:var(--tinta2);padding:9px 12px;white-space:nowrap;
+  border-bottom:2px solid transparent;font-weight:700;font-size:.9rem}
+.tabs a.activo{color:var(--negro);border-bottom-color:var(--rosa)}
+table.tabla{width:100%;border-collapse:collapse;font-size:.9rem}
+.tabla th,.tabla td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--linea)}
+.tabla th{font-weight:700;color:var(--tinta2);font-size:.8rem}
+.pill{display:inline-block;font-size:.72rem;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--salvia15)}
+.pill.pausa{background:var(--rosa35)}
+.aviso-calido{background:var(--salvia15);border-radius:var(--r-s);padding:12px;margin-bottom:12px;font-size:.88rem}
+
+/* Escritorio */
+@media(min-width:768px){
+  html{font-size:18px}
+  .nav-inf{display:none}
+  .lateral{display:block;width:230px;padding:18px 12px;border-right:1px solid var(--linea)}
+  .lateral nav{display:flex;flex-direction:column;gap:4px;position:sticky;top:18px}
+  .lateral a{text-decoration:none;color:var(--tinta2);padding:10px 12px;border-radius:10px;
+    display:flex;gap:10px;align-items:center;font-weight:700}
+  .lateral a.activo{background:var(--rosa20);color:var(--negro)}
+  .principal{padding:24px 28px}
+  .inicio-grid{display:grid;grid-template-columns:62% 1fr;gap:20px;align-items:start}
+  .banner img{height:220px}
+  .salida-lat{margin-top:18px}
+}

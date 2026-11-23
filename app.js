@@ -174,12 +174,50 @@ function pDiario(){
       <p class="mini" style="margin:.4rem 0 0">Diana puede leer tu diario como parte de tu acompañamiento. No lo ve nadie más del equipo.</p>
     </div>
     <a class="btn bloque" href="#/diario/nueva">Nueva reflexión</a>
-    <div class="card" style="margin-top:14px">
-      ${estado.diario.map(e=>`<a class="entrada" href="#/diario/${e.id}">
-        <span><strong>${esc(e.titulo||"Reflexión")}</strong><br><span class="mini tenue">${e.fecha} · ${esc(e.emocion)}</span></span>
-        ${e.sesion?'<span class="etq">En sesión</span>':''}
-      </a>`).join("")}
-    </div>`);
+    <div class="card" id="lista-diario" style="margin-top:14px"><p class="mini tenue">Cargando…</p></div>`);
+}
+function fmtFecha(ts){
+  try{ const d = ts && ts.toDate ? ts.toDate() : null;
+    return d ? d.toLocaleDateString("es",{day:"numeric",month:"short"}) : "Reciente"; }
+  catch(e){ return "Reciente"; }
+}
+function errDB(err){
+  const code = (err && err.code) || "";
+  if(code==="permission-denied") return '<p class="mini">No tienes permiso para ver esto.</p>';
+  console.warn("db:", code, err && err.message);
+  return '<p class="mini">No se pudo cargar. ¿Ya está configurada la base de datos (Firestore + reglas)?</p>';
+}
+async function cargarDinamico(sec,a){
+  if(sec!=="diario" || !window.MiDB) return;
+  const uid = window.MiAuth && window.MiAuth.user && window.MiAuth.user.uid; if(!uid) return;
+  if(!a){
+    const cont=document.getElementById("lista-diario"); if(!cont) return;
+    try{
+      const items = await window.MiDB.listEntradas(uid);
+      cont.innerHTML = items.length ? items.map(e=>`<a class="entrada" href="#/diario/${e.id}">
+        <span><strong>${esc(e.titulo||"Reflexión")}</strong><br><span class="mini tenue">${fmtFecha(e.creado)} · ${esc(e.emocion||"—")}</span></span>
+        ${e.sesion?'<span class="etq">En sesión</span>':''}</a>`).join("")
+        : '<p class="mini tenue">Aún no has escrito nada. Puedes empezar cuando quieras.</p>';
+    }catch(err){ cont.innerHTML = errDB(err); }
+  } else if(a!=="nueva"){
+    const cont=document.getElementById("entrada-cont"); if(!cont) return;
+    try{
+      const e = await window.MiDB.getEntrada(uid, a);
+      cont.innerHTML = !e ? '<p>No encontramos esta reflexión.</p>' : `
+        <div class="enc"><a class="btn texto" href="#/diario">← Volver</a>
+          <h1>${esc(e.titulo||"Reflexión")}</h1>
+          <p class="mini tenue">${fmtFecha(e.creado)} · ${esc(e.emocion||"—")} · Confidencial con Diana</p></div>
+        <div class="card"><p>${esc(e.texto)||'<span class="tenue">(sin texto)</span>'}</p></div>
+        ${e.sesion?'<p class="mini"><span class="etq">En sesión</span> La llevas a tu próxima sesión.</p>':''}
+        <button class="btn sec" onclick="borrarEntrada('${a}')">Eliminar</button>`;
+    }catch(err){ cont.innerHTML = errDB(err); }
+  }
+}
+async function borrarEntrada(id){
+  const uid = window.MiAuth && window.MiAuth.user && window.MiAuth.user.uid; if(!uid) return;
+  if(!confirm("¿Eliminar esta reflexión? No se puede deshacer.")) return;
+  try{ await window.MiDB.delEntrada(uid, id); }catch(e){ alert("No se pudo eliminar."); return; }
+  go("#/diario");
 }
 
 function pDiarioNueva(){
@@ -202,26 +240,20 @@ function pDiarioNueva(){
     </form>`);
 }
 
-function guardarEntrada(ev){
+async function guardarEntrada(ev){
   ev.preventDefault();
   const f = ev.target;
   const emo = [...f.querySelectorAll('.chip[aria-pressed="true"]')].map(c=>c.textContent)[0] || "—";
-  estado.diario.unshift({ id: estado.nid++, fecha:"Ahora", titulo:f.titulo.value.trim(),
-    emocion:emo, texto:f.texto.value.trim(), sesion:f.sesion.checked });
-  alert("Guardado. (Demostración: no se conserva al recargar.)");
+  const uid = window.MiAuth && window.MiAuth.user && window.MiAuth.user.uid; if(!uid) return;
+  const btn = f.querySelector('button[type=submit]'); if(btn) btn.disabled=true;
+  try{
+    await window.MiDB.addEntrada(uid, { titulo:f.titulo.value.trim(), texto:f.texto.value.trim(), emocion:emo, sesion:f.sesion.checked });
+  }catch(e){ alert("No se pudo guardar. ¿Ya está configurada la base de datos?"); if(btn) btn.disabled=false; return; }
   go("#/diario");
 }
 
 function pEntrada(id){
-  const e = estado.diario.find(x=>x.id==id);
-  if(!e) return shell("diario",'<p>No encontramos esta reflexión.</p>');
-  return shell("diario", `
-    <div class="enc"><a class="btn texto" href="#/diario">← Volver</a>
-      <h1>${esc(e.titulo||"Reflexión")}</h1>
-      <p class="mini tenue">${e.fecha} · ${esc(e.emocion)} · Confidencial con Diana</p></div>
-    <div class="card"><p>${esc(e.texto)||'<span class="tenue">(sin texto)</span>'}</p></div>
-    ${e.sesion?'<p class="mini"><span class="etq">En sesión</span> La llevas a tu próxima sesión.</p>':''}
-    <a class="btn sec" onclick="alert('Editar / eliminar (demostración).')">Editar</a>`);
+  return shell("diario", `<div id="entrada-cont"><p class="mini tenue">Cargando…</p></div>`);
 }
 
 // ---- Laboratorio ----
@@ -274,14 +306,24 @@ function pPerfil(){
     <div class="card"><h3>Mi cuenta</h3>
       <p class="mini tenue">${window.MiAuth && window.MiAuth.user ? esc(window.MiAuth.user.email) : "Sesión iniciada."}</p>
       <button class="btn sec" onclick="cerrarSesion()">Cerrar sesión</button></div>
-    <div class="card"><h3>Mis datos</h3><p class="mini tenue">Nombre preferido, zona horaria y recordatorios.</p></div>
+    <div class="card"><h3>Mi nombre preferido</h3>
+      <input type="text" id="perfil-nombre" placeholder="¿Cómo quieres que te llamemos?">
+      <a class="btn sec" onclick="guardarNombre()">Guardar</a>
+      <p id="perfil-nombre-msg" class="mini tenue"></p></div>
     <div class="card"><h3>Tu diario</h3>
       <p class="mini">Es un espacio confidencial con Diana: ella puede leerlo como parte de tu acompañamiento. No lo ve nadie más del equipo.</p></div>
     <div class="card"><h3>Seguridad</h3><p class="mini tenue">Contraseña, dispositivos y cerrar sesión en todos.</p></div>
-    <div class="card"><h3>Mis datos y consentimientos</h3><p class="mini tenue">Solicitar copia o eliminación.</p></div>
-    <hr class="sep">
-    <a class="btn sec bloque" href="#/panel"><span class="rotulo">Solo demostración</span> &nbsp; Ver el panel de Diana →</a>
-    <p class="mini tenue" style="text-align:center;margin-top:8px">En la app real, el panel tiene acceso y contraseña propios.</p>`);
+    ${(window.MiAuth && window.MiAuth.isAdmin && window.MiAuth.isAdmin())
+      ? '<hr class="sep"><a class="btn sec bloque" href="#/panel">Ir al panel de Diana →</a>' : ''}`);
+}
+function guardarNombre(){
+  const uid = window.MiAuth && window.MiAuth.user && window.MiAuth.user.uid;
+  const inp = document.getElementById("perfil-nombre");
+  const msg = document.getElementById("perfil-nombre-msg");
+  if(!uid || !inp.value.trim()) return;
+  window.MiDB.setNombre(uid, inp.value.trim())
+    .then(()=>{ msg.textContent="Guardado."; })
+    .catch(()=>{ msg.textContent="No se pudo guardar. ¿Está configurada la base de datos?"; });
 }
 
 function pAyuda(){
@@ -378,49 +420,53 @@ function panResumen(){
 
 function panParticipantes(){
   return panelShell("panel/participantes", `
-    <div class="enc"><h1>Participantes</h1></div>
-    <div class="card" style="overflow:auto">
-      <table class="tabla"><thead><tr><th>Nombre</th><th>Plan</th><th>Estado</th><th>Próxima</th><th>Pendiente</th><th></th></tr></thead>
-      <tbody>${PARTICIPANTES.map(p=>`<tr>
-        <td><strong>${p.nombre}</strong></td><td>${p.plan}</td>
-        <td><span class="pill ${p.estado==='En pausa'?'pausa':''}">${p.estado}</span></td>
-        <td>${p.sesion}</td><td class="mini tenue">${p.pend}</td>
-        <td><a class="btn texto" href="#/panel/ficha/${p.id}">Abrir</a></td></tr>`).join("")}</tbody></table>
-    </div>
-    <a class="btn sec" onclick="alert('Crear participante: nombre, correo, plan e invitación (demostración).')">Nueva participante</a>`);
+    <div class="enc"><h1>Participantes</h1>
+      <p class="tenue mini">Las cuentas que se han registrado en la app.</p></div>
+    <div class="card" id="pan-part" style="overflow:auto"><p class="mini tenue">Cargando…</p></div>`);
 }
 
 function panFicha(id, tab){
-  const p = PARTICIPANTES.find(x=>x.id==id) || PARTICIPANTES[0];
-  tab = tab || "resumen";
-  const tabs = [["resumen","Resumen"],["sesiones","Sesiones"],["ejercicios","Ejercicios"],
-    ["diario","Diario"],["notas","Notas"],["permisos","Permisos"]];
+  tab = tab || "diario";
+  const tabs = [["diario","Diario"],["notas","Notas"],["sesiones","Sesiones"],["permisos","Permisos"]];
   let c = "";
-  if(tab==="resumen") c = `<div class="card"><p><strong>Plan:</strong> ${p.plan} · 90 días</p>
-    <p><strong>Estado:</strong> ${p.estado}</p><p><strong>Sesiones:</strong> 3 de 10 realizadas</p>
-    <p class="mini tenue">Objetivos acordados en sesión. Esta ficha no es la historia clínica.</p></div>`;
-  else if(tab==="sesiones") c = `<div class="card"><p>Próxima: ${p.sesion}</p><p class="mini tenue">Historial administrativo de asistencia. Sin notas de sesión aquí.</p>
-    <a class="btn sec" onclick="alert('Registrar o reprogramar (demostración).')">Registrar sesión</a></div>`;
-  else if(tab==="ejercicios") c = `<div class="card"><p>Reconocer lo que necesito — <span class="pill">Pendiente</span></p>
-    <p class="mini tenue">Ves el estado; las respuestas privadas no, salvo que sea una entrega.</p>
-    <a class="btn sec" href="#/panel/asignaciones">Asignar ejercicio</a></div>`;
-  else if(tab==="diario") c = `
+  if(tab==="diario") c = `
     <div class="aviso-calido"><strong>Acércate con calidez.</strong> Puedes leer su diario como parte del acompañamiento. Evita confrontarla con lo que leíste («¿cómo estás?», no «vi que escribiste…»). Ella no recibe aviso de que lo abriste.</div>
-    <div class="card">${estado.diario.map(e=>`<div style="padding:10px 0;border-bottom:1px solid var(--linea)">
-      <strong>${esc(e.titulo||"Reflexión")}</strong> <span class="mini tenue">· ${e.fecha} · ${esc(e.emocion)}</span>
-      ${e.sesion?' <span class="pill">Quiere hablarlo en sesión</span>':''}
-      <p class="mini">${esc(e.texto)}</p></div>`).join("")}</div>`;
+    <div class="card" id="pan-diario"><p class="mini tenue">Cargando…</p></div>`;
   else if(tab==="notas") c = `<div class="card"><h3>Nota profesional</h3>
-    <p class="mini tenue">Privada, solo tú. Para datos reales deberá ir cifrada y auditada; no es una historia clínica validada.</p>
+    <p class="mini tenue">Para datos reales deberá ir cifrada y auditada; no es una historia clínica validada.</p>
     <textarea placeholder="Comentario de seguimiento..."></textarea>
-    <a class="btn sec" onclick="alert('Nota guardada (demostración).')">Guardar nota</a></div>
-    <div class="card"><h3>Seguimiento</h3><p class="mini">12 nov · Asignó «Reconocer lo que necesito» tras la sesión 2. Revisión en sesión 4.</p></div>`;
-  else c = `<div class="card"><p class="mini">Qué puede ver y desde cuándo. El diario es confidencial contigo (la participante lo aceptó en el onboarding). Administración técnica y analítica: sin acceso.</p></div>`;
+    <a class="btn sec" onclick="alert('Nota profesional: se guardará en la siguiente iteración.')">Guardar nota</a></div>`;
+  else if(tab==="sesiones") c = `<div class="card"><p class="mini tenue">Agenda y asistencia (demostración). La videollamada se coordina fuera de la app.</p></div>`;
+  else c = `<div class="card"><p class="mini">El diario es confidencial entre la participante y Diana (ella lo aceptó al entrar). Administración técnica y analítica: sin acceso. Las reglas lo hacen cumplir en el servidor.</p></div>`;
   return panelShell("panel/participantes", `
     <div class="enc"><a class="btn texto" href="#/panel/participantes">← Participantes</a>
-      <h1>${p.nombre} <span class="mini tenue">(ficticia)</span></h1></div>
+      <h1>Participante</h1></div>
     <div class="tabs">${tabs.map(([k,t])=>`<a href="#/panel/ficha/${id}/${k}" class="${tab===k?'activo':''}">${t}</a>`).join("")}</div>
     ${c}`);
+}
+
+async function cargarPanel(a,b,c){
+  if(!window.MiDB) return;
+  if(a==="participantes"){
+    const cont=document.getElementById("pan-part"); if(!cont) return;
+    try{
+      const ps = await window.MiDB.listParticipantes();
+      cont.innerHTML = ps.length ? `<table class="tabla"><thead><tr><th>Correo</th><th>Nombre</th><th></th></tr></thead>
+        <tbody>${ps.map(p=>`<tr><td class="mini">${esc(p.email||p.uid)}</td><td>${esc(p.nombre||"—")}</td>
+        <td><a class="btn texto" href="#/panel/ficha/${p.uid}/diario">Abrir</a></td></tr>`).join("")}</tbody></table>`
+        : '<p class="mini tenue">Todavía no hay participantes registradas.</p>';
+    }catch(err){ cont.innerHTML = errDB(err); }
+  } else if(a==="ficha" && (c==="diario" || !c)){
+    const cont=document.getElementById("pan-diario"); if(!cont) return;
+    try{
+      const items = await window.MiDB.listEntradas(b);
+      cont.innerHTML = items.length ? items.map(e=>`<div style="padding:10px 0;border-bottom:1px solid var(--linea)">
+        <strong>${esc(e.titulo||"Reflexión")}</strong> <span class="mini tenue">· ${fmtFecha(e.creado)} · ${esc(e.emocion||"—")}</span>
+        ${e.sesion?' <span class="pill">Quiere hablarlo en sesión</span>':''}
+        <p class="mini">${esc(e.texto)}</p></div>`).join("")
+        : '<p class="mini tenue">Esta participante aún no ha escrito en su diario.</p>';
+    }catch(err){ cont.innerHTML = errDB(err); }
+  }
 }
 
 function panAgenda(){
@@ -577,8 +623,14 @@ function render(){
   if(!A.user && !PUBLICOS.includes(sec)){ location.hash="#/entrar"; return; }
   if(A.user && (sec==="" || sec==="entrar")){ location.hash = estado.obVisto ? "#/inicio" : "#/bienvenida/1"; return; }
   let html;
-  // Panel de Diana: vista separada, no exige onboarding de participante.
+  // Panel de Diana: vista separada, solo para el correo admin (Diana).
   if(sec==="panel"){
+    if(!A.isAdmin || !A.isAdmin()){
+      document.getElementById("root").innerHTML = panelShell("panel",
+        '<div class="enc"><h1>Panel</h1></div><div class="card"><p>Esta área es solo para Diana. Tu cuenta no tiene acceso administrativo.</p><a class="btn sec" href="#/inicio">Volver a mi espacio</a></div>');
+      const md=document.getElementById("main"); if(md) md.focus({preventScroll:true});
+      window.scrollTo(0,0); return;
+    }
     switch(a){
       case undefined: case "": html = panResumen(); break;
       case "participantes": html = panParticipantes(); break;
@@ -591,7 +643,7 @@ function render(){
     }
     document.getElementById("root").innerHTML = html;
     const mm = document.getElementById("main"); if(mm) mm.focus({preventScroll:true});
-    window.scrollTo(0,0); return;
+    window.scrollTo(0,0); cargarPanel(a,b,c); return;
   }
   if(A.user && !estado.obVisto && sec!=="bienvenida" && !PUBLICOS.includes(sec)){ location.hash="#/bienvenida/1"; return; }
   switch(sec){
@@ -613,6 +665,7 @@ function render(){
   document.getElementById("root").innerHTML = html;
   const m = document.getElementById("main"); if(m) m.focus({preventScroll:true});
   window.scrollTo(0,0);
+  cargarDinamico(sec,a);
 }
 window.__authChanged = render;
 window.addEventListener("hashchange", render);

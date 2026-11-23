@@ -1,0 +1,39 @@
+rules_version = '2';
+// Reglas de seguridad de Mi Espacio.
+// Publícalas en: Firebase Console -> Firestore Database -> Rules -> Publish.
+// IMPORTANTE: cambia el correo de abajo por el de Diana (en minúsculas),
+// y pon EXACTAMENTE EL MISMO en auth.js (constante ADMIN_EMAIL).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function esAdmin() {
+      return request.auth != null
+        && request.auth.token.email != null
+        && request.auth.token.email.lower() == 'correo_de_diana@ejemplo.com';
+    }
+    function esDuena(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /participantes/{uid} {
+      // Cada participante ve su perfil; Diana (admin) ve el de todas.
+      allow get: if esDuena(uid) || esAdmin();
+      allow list: if esAdmin();
+      allow create, update: if esDuena(uid);
+      allow delete: if false;
+
+      match /diario/{entrada} {
+        // Modelo acordado (opción B): la dueña y Diana pueden leer.
+        allow read: if esDuena(uid) || esAdmin();
+        // Solo la dueña escribe o borra su diario. Diana no escribe en él.
+        allow create, update, delete: if esDuena(uid);
+      }
+    }
+
+    // Todo lo demás, bloqueado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

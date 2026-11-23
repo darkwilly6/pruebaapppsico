@@ -10,7 +10,7 @@ service cloud.firestore {
     function esAdmin() {
       return request.auth != null
         && request.auth.token.email != null
-        && request.auth.token.email.lower() == 'correo_de_diana@ejemplo.com';
+        && request.auth.token.email.lower() == 'psico.dianayala@gmail.com';
     }
     function esDuena(uid) {
       return request.auth != null && request.auth.uid == uid;

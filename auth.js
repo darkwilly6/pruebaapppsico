@@ -23,7 +23,7 @@ const firebaseConfig = {
 
 // ⚠️ CAMBIA ESTE CORREO por el de Diana (en minúsculas) cuando lo tengas,
 //    y pon EXACTAMENTE EL MISMO en firestore.rules. Es el único admin.
-const ADMIN_EMAIL = "correo_de_diana@ejemplo.com";
+const ADMIN_EMAIL = "psico.dianayala@gmail.com";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);

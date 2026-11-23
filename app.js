@@ -271,6 +271,9 @@ function pBiblioteca(){
 function pPerfil(){
   return shell("perfil", `
     <div class="enc"><h1>Perfil y privacidad</h1></div>
+    <div class="card"><h3>Mi cuenta</h3>
+      <p class="mini tenue">${window.MiAuth && window.MiAuth.user ? esc(window.MiAuth.user.email) : "Sesión iniciada."}</p>
+      <button class="btn sec" onclick="cerrarSesion()">Cerrar sesión</button></div>
     <div class="card"><h3>Mis datos</h3><p class="mini tenue">Nombre preferido, zona horaria y recordatorios.</p></div>
     <div class="card"><h3>Tu diario</h3>
       <p class="mini">Es un espacio confidencial con Diana: ella puede leerlo como parte de tu acompañamiento. No lo ve nadie más del equipo.</p></div>
@@ -460,10 +463,82 @@ function panSeguridad(){
       <p class="mini tenue">Dispositivos, registro de aperturas y plantillas de consentimiento (maqueta).</p></div>`);
 }
 
+// ---------- LOGIN (Firebase Auth) ----------
+function pantallaCarga(){
+  return `<div style="min-height:70vh;display:grid;place-items:center;color:var(--tinta2)"><p>Cargando…</p></div>`;
+}
+function marcaLogin(){
+  return `<div style="text-align:center;margin-bottom:18px"><img src="assets/icono-mi-espacio.png" alt="" style="width:72px;margin:0 auto 8px"><h1>Mi Espacio</h1><p class="tenue">Tu espacio para volver a ti</p></div>`;
+}
+function pLogin(){
+  return `<div class="ob"><div class="ob-cont">
+    ${marcaLogin()}
+    <form onsubmit="hacerLogin(event)">
+      <label>Correo</label>
+      <input type="email" name="email" autocomplete="username" required placeholder="tucorreo@ejemplo.com">
+      <label>Contraseña</label>
+      <input type="password" name="pwd" autocomplete="current-password" required>
+      <p id="login-err" role="alert" style="color:var(--negro);background:var(--rosa35);border-radius:10px;margin:10px 0 0"></p>
+      <button class="btn bloque" type="submit" style="margin-top:14px">Entrar</button>
+    </form>
+    <p class="mini" style="text-align:center;margin-top:12px"><a href="#/recuperar">¿Olvidaste tu contraseña?</a></p>
+    <p class="mini tenue" style="text-align:center">Tu cuenta la crea Diana por invitación.</p>
+    <p class="mini" style="text-align:center"><a href="#/ayuda">Ayuda</a></p>
+  </div></div>`;
+}
+function pRecuperar(){
+  return `<div class="ob"><div class="ob-cont">
+    ${marcaLogin()}
+    <h2 style="text-align:center">Recuperar acceso</h2>
+    <form onsubmit="enviarReset(event)">
+      <label>Correo</label>
+      <input type="email" name="email" required placeholder="tucorreo@ejemplo.com">
+      <p id="reset-msg" role="status" class="mini" style="margin-top:8px"></p>
+      <button class="btn bloque" type="submit" style="margin-top:12px">Enviar enlace</button>
+    </form>
+    <p class="mini" style="text-align:center;margin-top:12px"><a href="#/entrar">Volver a entrar</a></p>
+  </div></div>`;
+}
+async function hacerLogin(ev){
+  ev.preventDefault();
+  const f=ev.target, err=document.getElementById("login-err");
+  err.style.padding="0"; err.textContent="";
+  const btn=f.querySelector("button"); btn.disabled=true;
+  try{
+    await window.MiAuth.signIn(f.email.value.trim(), f.pwd.value);
+  }catch(e){
+    const cred=["auth/invalid-credential","auth/wrong-password","auth/user-not-found","auth/invalid-email"];
+    err.style.padding="8px 10px";
+    err.textContent = cred.includes(e.code) ? "El correo o la contraseña no coinciden."
+      : e.code==="auth/too-many-requests" ? "Demasiados intentos. Espera un momento."
+      : e.code==="auth/unauthorized-domain" ? "Este dominio aún no está autorizado en Firebase."
+      : e.code==="auth/network-request-failed" ? "Sin conexión con el servidor."
+      : "No se pudo iniciar sesión.";
+    console.warn("login:", e.code, e.message);
+    btn.disabled=false;
+  }
+}
+async function enviarReset(ev){
+  ev.preventDefault();
+  const f=ev.target, m=document.getElementById("reset-msg");
+  try{ await window.MiAuth.reset(f.email.value.trim()); }catch(e){ console.warn("reset:", e.code); }
+  m.textContent="Si existe una cuenta con ese correo, recibirás un enlace.";
+}
+async function cerrarSesion(){
+  try{ await window.MiAuth.signOut(); }catch(e){}
+  estado.obVisto=false; location.hash="#/entrar";
+}
+
 // ---------- ROUTER ----------
+const PUBLICOS = ["entrar","recuperar","ayuda"];
+let cargaAviso=false;
 function render(){
-  const h = (location.hash || "#/bienvenida").replace(/^#\//,"");
+  const A = window.MiAuth;
+  const h = (location.hash || "").replace(/^#\//,"");
   const [sec, a, b, c] = h.split("/");
+  if(!A || !A.ready){ document.getElementById("root").innerHTML = pantallaCarga(); return; }
+  if(!A.user && !PUBLICOS.includes(sec)){ location.hash="#/entrar"; return; }
+  if(A.user && (sec==="" || sec==="entrar")){ location.hash = estado.obVisto ? "#/inicio" : "#/bienvenida/1"; return; }
   let html;
   // Panel de Diana: vista separada, no exige onboarding de participante.
   if(sec==="panel"){
@@ -481,8 +556,10 @@ function render(){
     const mm = document.getElementById("main"); if(mm) mm.focus({preventScroll:true});
     window.scrollTo(0,0); return;
   }
-  if(!estado.obVisto && sec!=="bienvenida"){ location.hash = "#/bienvenida/1"; return; }
+  if(A.user && !estado.obVisto && sec!=="bienvenida" && !PUBLICOS.includes(sec)){ location.hash="#/bienvenida/1"; return; }
   switch(sec){
+    case "entrar": html = pLogin(); break;
+    case "recuperar": html = pRecuperar(); break;
     case "bienvenida": html = pOnboarding(a); break;
     case "inicio": html = pInicio(); break;
     case "camino": html = pCamino(); break;
@@ -493,11 +570,16 @@ function render(){
     case "biblioteca": html = pBiblioteca(); break;
     case "perfil": html = pPerfil(); break;
     case "ayuda": html = pAyuda(); break;
-    default: html = pInicio();
+    default: html = A.user ? pInicio() : pLogin();
   }
   document.getElementById("root").innerHTML = html;
   const m = document.getElementById("main"); if(m) m.focus({preventScroll:true});
   window.scrollTo(0,0);
 }
+window.__authChanged = render;
 window.addEventListener("hashchange", render);
-window.addEventListener("DOMContentLoaded", render);
+window.addEventListener("DOMContentLoaded", ()=>{
+  render();
+  setTimeout(()=>{ if((!window.MiAuth || !window.MiAuth.ready) && !cargaAviso){ cargaAviso=true;
+    document.getElementById("root").innerHTML = '<div style="min-height:70vh;display:grid;place-items:center;text-align:center;color:#555;padding:20px"><div><p>No se pudo cargar el inicio de sesión.</p><p class="mini">Revisa tu conexión o la configuración de Firebase.</p></div></div>'; } }, 8000);
+});

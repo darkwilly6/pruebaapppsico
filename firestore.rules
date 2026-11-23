@@ -29,6 +29,16 @@ service cloud.firestore {
         // Solo la dueña escribe o borra su diario. Diana no escribe en él.
         allow create, update, delete: if esDuena(uid);
       }
+
+      match /sesiones/{sid} {
+        allow read: if esDuena(uid) || esAdmin();
+        allow write: if esAdmin();            // Diana agenda y pone el enlace de Meet
+      }
+      match /solicitudes/{rid} {
+        allow read: if esDuena(uid) || esAdmin();
+        allow create: if esDuena(uid);        // la participante pide día/hora
+        allow update, delete: if esAdmin();
+      }
     }
 
     // Todo lo demás, bloqueado.

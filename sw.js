@@ -1,5 +1,5 @@
 // Mi Espacio — service worker del prototipo. Cachea el shell para que sea instalable y funcione sin conexión.
-const CACHE = "miespacio-proto-v5";
+const CACHE = "miespacio-proto-v6";
 const ASSETS = [
   "./","index.html","estilos.css","app.js","auth.js","manifest.json",
   "icons/icon-192.png","icons/icon-512.png","icons/icon-180.png",

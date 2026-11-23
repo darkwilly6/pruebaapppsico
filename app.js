@@ -87,25 +87,18 @@ function salidaRapida(){
 
 // ---------- PANTALLAS ----------
 function pInicio(){
-  const p = estado.participante;
   return shell("inicio", `
   <div class="inicio-grid">
     <div>
-      <div class="enc"><h1>Hola, ${esc(p.nombre)}</h1>
-        <p class="tenue">Método Emperatriz · ${p.plan} · Sesión ${p.sesion} de ${p.total}</p></div>
-      <div class="banner"><img src="assets/banner-mi-espacio.webp" alt=""></div>
-      <div class="card destacada">
-        <span class="etq rosa">Tu próxima sesión</span>
-        <h3 style="margin:8px 0 2px">Martes 9 de marzo · 5:00 p. m.</h3>
-        <p class="mini tenue">Hora de El Salvador</p>
-        <a class="btn" href="#/sesiones">Ver sesión</a>
-      </div>
+      <div class="enc"><h1 id="ini-saludo">Hola</h1>
+        <p class="tenue">Método Emperatriz</p></div>
+      <div class="banner"><img src="assets/banner-mi-espacio.webp" alt="" width="1400" height="788"></div>
+      <div class="card" id="ini-sesion"><p class="mini tenue">Cargando tu sesión…</p></div>
       <div class="card">
         <span class="etq">Para esta semana</span>
         <h3 style="margin:8px 0 2px">Reconocer lo que necesito</h3>
         <p class="mini tenue">10 min · Uso privado</p>
         <a class="btn sec" href="#/laboratorio">Comenzar</a>
-        <a class="btn texto" href="#/camino">Ver otras (2)</a>
       </div>
     </div>
     <div>
@@ -113,7 +106,7 @@ function pInicio(){
         <h3>Tu camino</h3>
         <p class="mini tenue">Cinco pilares. Avanzas a tu ritmo.</p>
         <div class="pilares">
-          ${PILARES.map(([n,,v])=>`<div class="fila"><span class="mini">${n}</span><span class="barra"><i style="width:${v}%"></i></span></div>`).join("")}
+          ${PILARES.map(([n])=>`<div class="fila"><span class="mini">${n}</span></div>`).join("")}
         </div>
         <a class="btn texto" href="#/camino">Explorar</a>
       </div>
@@ -129,14 +122,21 @@ function pInicio(){
     </div>
   </div>`);
 }
+function htmlSesionCard(x){
+  return `<span class="etq rosa">Tu próxima sesión</span>
+    <h3 style="margin:8px 0 2px">${esc(x.fecha)}${x.hora?" · "+esc(x.hora):""}</h3>
+    <p class="mini tenue">Hora de El Salvador</p>
+    ${x.enlace
+      ? `<a class="btn" href="${esc(x.enlace)}" target="_blank" rel="noopener">Entrar a la sesión</a>`
+      : `<p class="mini">El enlace estará disponible cuando Diana lo agregue.</p>`}
+    <a class="btn texto" href="#/sesiones">Ver o cambiar</a>`;
+}
 
 function pCamino(){
-  const p = estado.participante;
   return shell("camino", `
     <div class="enc"><h1>Mi Camino</h1>
-      <p class="tenue">${p.plan} · 90 días · ${p.total} sesiones</p></div>
+      <p class="tenue">Los cinco pilares del método. Avanzas a tu ritmo.</p></div>
     ${PILARES.map(([n,d])=>`<div class="card"><h3>${n}</h3><p class="tenue mini">${d}</p>
-      <p class="mini">2 de 3 materiales revisados</p>
       <a class="btn sec" href="#/biblioteca">Explorar recursos</a></div>`).join("")}
     <p class="mini tenue">Los pilares son territorios del método, no fases obligatorias.</p>`);
 }
@@ -144,25 +144,33 @@ function pCamino(){
 function pSesiones(){
   return shell("sesiones", `
     <div class="enc"><h1>Mis sesiones</h1></div>
-    <div class="card destacada">
-      <span class="etq rosa">Próxima</span>
-      <h3 style="margin:8px 0 2px">Martes 9 de marzo · 5:00 p. m.</h3>
-      <p class="mini tenue">Hora de El Salvador · Confirmada</p>
-      <a class="btn" href="#">Entrar a la sesión</a>
-      <a class="btn texto" onclick="alert('El enlace de la videollamada aparece aquí poco antes de la sesión. La reunión no ocurre dentro de la app.')">¿Cómo entro?</a>
-    </div>
+    <div class="card" id="ses-prox"><p class="mini tenue">Cargando…</p></div>
     <div class="card">
-      <h3>Preparar mi sesión</h3>
-      <p class="mini tenue">Solo tú. Llévalo a la sesión o déjate una nota.</p>
-      <label>Algo que quiero conversar <span class="op">(opcional)</span></label>
-      <textarea placeholder="Escribe aquí..."></textarea>
-      <a class="btn sec" onclick="alert('Guardado solo para ti (demostración).')">Guardar para mí</a>
+      <h3>Solicitar una sesión o un cambio</h3>
+      <p class="mini tenue">Propón un día y una hora que te vengan bien. Diana lo revisa y te confirma; no queda agendada hasta entonces.</p>
+      <label>¿Qué día te viene bien?</label>
+      <input type="text" id="sol-dia" placeholder="Ej. Jueves 12 de marzo">
+      <label>¿A qué hora?</label>
+      <input type="text" id="sol-hora" placeholder="Ej. 5:00 p. m.">
+      <label>Comentario <span class="op">(opcional)</span></label>
+      <textarea id="sol-com" placeholder="Si no puedes a cierta hora, o prefieres otra, cuéntale aquí."></textarea>
+      <p id="sol-msg" class="mini tenue" role="status"></p>
+      <button class="btn" onclick="enviarSolicitud()">Enviar solicitud</button>
     </div>
-    <div class="card">
-      <h3>¿Necesitas cambiarla?</h3>
-      <p class="mini tenue">Tu sesión sigue igual hasta que Diana lo confirme.</p>
-      <a class="btn sec" onclick="alert('Se abriría el canal acordado con Diana. La regla exacta de cambios está pendiente de definir.')">Solicitar cambio</a>
-    </div>`);
+    <div class="card" id="ses-sols"><p class="mini tenue">Cargando…</p></div>`);
+}
+function enviarSolicitud(){
+  const uid = window.MiAuth && window.MiAuth.user && window.MiAuth.user.uid; if(!uid) return;
+  const dia = document.getElementById("sol-dia").value.trim();
+  const hora = document.getElementById("sol-hora").value.trim();
+  const com = document.getElementById("sol-com").value.trim();
+  const msg = document.getElementById("sol-msg");
+  if(!dia){ msg.textContent = "Escribe al menos un día."; return; }
+  window.MiDB.addSolicitud(uid, { tipo:"agendar", dia, hora, comentario:com })
+    .then(()=>{ msg.textContent = "Solicitud enviada. Diana la verá y te confirmará.";
+      document.getElementById("sol-dia").value=""; document.getElementById("sol-hora").value=""; document.getElementById("sol-com").value="";
+      cargarSesiones(uid); })
+    .catch(()=>{ msg.textContent = "No se pudo enviar. ¿Ya está configurada la base de datos?"; });
 }
 
 // ---- Diario (modelo B: visible para Diana, avisado) ----
@@ -188,8 +196,12 @@ function errDB(err){
   return '<p class="mini">No se pudo cargar. ¿Ya está configurada la base de datos (Firestore + reglas)?</p>';
 }
 async function cargarDinamico(sec,a){
-  if(sec!=="diario" || !window.MiDB) return;
-  const uid = window.MiAuth && window.MiAuth.user && window.MiAuth.user.uid; if(!uid) return;
+  if(!window.MiDB || !window.MiAuth || !window.MiAuth.user) return;
+  const uid = window.MiAuth.user.uid;
+  if(sec==="inicio"){ await cargarInicio(uid); return; }
+  if(sec==="sesiones"){ await cargarSesiones(uid); return; }
+  if(sec==="perfil"){ await cargarPerfil(uid); return; }
+  if(sec!=="diario") return;
   if(!a){
     const cont=document.getElementById("lista-diario"); if(!cont) return;
     try{
@@ -218,6 +230,41 @@ async function borrarEntrada(id){
   if(!confirm("¿Eliminar esta reflexión? No se puede deshacer.")) return;
   try{ await window.MiDB.delEntrada(uid, id); }catch(e){ alert("No se pudo eliminar."); return; }
   go("#/diario");
+}
+async function cargarInicio(uid){
+  try{ const p = await window.MiDB.getPerfil(uid);
+    const s = document.getElementById("ini-saludo");
+    if(s) s.textContent = p && p.nombre ? "Hola, " + p.nombre : "Hola";
+  }catch(e){}
+  const cont = document.getElementById("ini-sesion"); if(!cont) return;
+  try{
+    const ses = await window.MiDB.listSesiones(uid);
+    if(ses.length){ cont.className = "card destacada"; cont.innerHTML = htmlSesionCard(ses[0]); }
+    else { cont.className = "card"; cont.innerHTML = `
+      <span class="etq">Sesiones</span>
+      <h3 style="margin:8px 0 2px">No tienes una sesión agendada</h3>
+      <p class="mini tenue">Cuando quieras, solicita tu próxima sesión con Diana.</p>
+      <a class="btn" href="#/sesiones">Solicitar sesión</a>`; }
+  }catch(err){ cont.innerHTML = errDB(err); }
+}
+async function cargarSesiones(uid){
+  const prox = document.getElementById("ses-prox");
+  if(prox){ try{ const ses = await window.MiDB.listSesiones(uid);
+    if(ses.length){ prox.className="card destacada"; prox.innerHTML = htmlSesionCard(ses[0]); }
+    else { prox.className="card"; prox.innerHTML = '<h3>No tienes una sesión agendada</h3><p class="mini tenue">Usa el formulario de abajo para solicitarla.</p>'; }
+  }catch(err){ prox.innerHTML = errDB(err); } }
+  const sols = document.getElementById("ses-sols");
+  if(sols){ try{ const rs = await window.MiDB.listSolicitudes(uid);
+    sols.innerHTML = "<h3>Tus solicitudes</h3>" + (rs.length
+      ? rs.map(r=>`<p class="mini">${esc(r.dia)} ${esc(r.hora||"")} · <span class="pill">${esc(r.estado||"pendiente")}</span>${r.comentario?"<br><span class='tenue'>"+esc(r.comentario)+"</span>":""}</p>`).join("")
+      : '<p class="mini tenue">Todavía no has enviado ninguna.</p>');
+  }catch(err){ sols.innerHTML = errDB(err); } }
+}
+async function cargarPerfil(uid){
+  try{ const p = await window.MiDB.getPerfil(uid); if(!p) return;
+    const n=document.getElementById("perfil-nombre"); if(n && p.nombre) n.value = p.nombre;
+    const a=document.getElementById("perfil-apellido"); if(a && p.apellido) a.value = p.apellido;
+  }catch(e){}
 }
 
 function pDiarioNueva(){
@@ -306,8 +353,9 @@ function pPerfil(){
     <div class="card"><h3>Mi cuenta</h3>
       <p class="mini tenue">${window.MiAuth && window.MiAuth.user ? esc(window.MiAuth.user.email) : "Sesión iniciada."}</p>
       <button class="btn sec" onclick="cerrarSesion()">Cerrar sesión</button></div>
-    <div class="card"><h3>Mi nombre preferido</h3>
-      <input type="text" id="perfil-nombre" placeholder="¿Cómo quieres que te llamemos?">
+    <div class="card"><h3>Mi nombre</h3>
+      <label>Nombre</label><input type="text" id="perfil-nombre" placeholder="Tu nombre">
+      <label>Apellido</label><input type="text" id="perfil-apellido" placeholder="Tu apellido">
       <a class="btn sec" onclick="guardarNombre()">Guardar</a>
       <p id="perfil-nombre-msg" class="mini tenue"></p></div>
     <div class="card"><h3>Tu diario</h3>
@@ -318,10 +366,11 @@ function pPerfil(){
 }
 function guardarNombre(){
   const uid = window.MiAuth && window.MiAuth.user && window.MiAuth.user.uid;
-  const inp = document.getElementById("perfil-nombre");
+  const nombre = document.getElementById("perfil-nombre").value.trim();
+  const apellido = document.getElementById("perfil-apellido").value.trim();
   const msg = document.getElementById("perfil-nombre-msg");
-  if(!uid || !inp.value.trim()) return;
-  window.MiDB.setNombre(uid, inp.value.trim())
+  if(!uid || !nombre) return;
+  window.MiDB.setPerfil(uid, { nombre, apellido })
     .then(()=>{ msg.textContent="Guardado."; })
     .catch(()=>{ msg.textContent="No se pudo guardar. ¿Está configurada la base de datos?"; });
 }
@@ -370,7 +419,7 @@ function pOnboarding(paso){
       ${puntos(4)}
     </div>
     <div class="ob-acc" style="justify-content:flex-end">
-      <button class="btn" onclick="estado.obVisto=true;go('#/inicio')">Entrar a Mi Espacio</button>
+      <button class="btn" onclick="terminarOnboarding()">Entrar a Mi Espacio</button>
     </div></div>`;
 }
 
@@ -405,17 +454,14 @@ function panelShell(sub, cont){
 
 function panResumen(){
   return panelShell("panel", `
-    <div class="enc"><h1>Resumen</h1><p class="tenue">Martes 23 de noviembre</p></div>
+    <div class="enc"><h1>Panel de Diana</h1>
+      <p class="tenue">Gestiona a tus participantes: su diario, sus sesiones y sus solicitudes.</p></div>
     <div class="card destacada">
-      <span class="etq rosa">Hoy</span>
-      <h3 style="margin:8px 0 2px">5:00 p. m. · Lucía (ficticia)</h3>
-      <a class="btn sec" href="#/panel/ficha/1">Abrir ficha</a>
+      <h3>Participantes</h3>
+      <p class="mini tenue">Las cuentas registradas en la app. Desde cada ficha agendas sesiones y lees el diario compartido.</p>
+      <a class="btn" href="#/panel/participantes">Ver participantes</a>
     </div>
-    <div class="card"><h3>Por resolver</h3>
-      <ul class="mini"><li>1 ejercicio por asignar a Lucía</li><li>1 enlace de sesión sin registrar</li><li>Reanudación de Rocío por confirmar</li></ul>
-    </div>
-    <div class="card"><h3>Actividad</h3>
-      <p class="mini tenue">3 participantes · 2 sesiones esta semana. Sin interpretaciones sobre su estado emocional.</p></div>`);
+    <div class="card"><p class="mini tenue">Sin paneles de “estado emocional”: aquí no se infiere nada sobre cómo está una persona.</p></div>`);
 }
 
 function panParticipantes(){
@@ -436,7 +482,16 @@ function panFicha(id, tab){
     <p class="mini tenue">Para datos reales deberá ir cifrada y auditada; no es una historia clínica validada.</p>
     <textarea placeholder="Comentario de seguimiento..."></textarea>
     <a class="btn sec" onclick="alert('Nota profesional: se guardará en la siguiente iteración.')">Guardar nota</a></div>`;
-  else if(tab==="sesiones") c = `<div class="card"><p class="mini tenue">Agenda y asistencia (demostración). La videollamada se coordina fuera de la app.</p></div>`;
+  else if(tab==="sesiones") c = `
+    <div class="card"><h3>Agendar una sesión</h3>
+      <p class="mini tenue">La reunión ocurre en Meet; aquí solo pones la fecha y el enlace.</p>
+      <label>Fecha</label><input type="text" id="ad-fecha" placeholder="Ej. Jueves 12 de marzo">
+      <label>Hora</label><input type="text" id="ad-hora" placeholder="Ej. 5:00 p. m.">
+      <label>Enlace de Meet</label><input type="text" id="ad-enlace" placeholder="https://meet.google.com/...">
+      <p id="ad-msg" class="mini tenue" role="status"></p>
+      <button class="btn" onclick="adAgendar('${id}')">Guardar sesión</button></div>
+    <div class="card" id="ad-sesiones"><p class="mini tenue">Cargando…</p></div>
+    <div class="card" id="ad-solicitudes"><p class="mini tenue">Cargando solicitudes…</p></div>`;
   else c = `<div class="card"><p class="mini">El diario es confidencial entre la participante y Diana (ella lo aceptó al entrar). Administración técnica y analítica: sin acceso. Las reglas lo hacen cumplir en el servidor.</p></div>`;
   return panelShell("panel/participantes", `
     <div class="enc"><a class="btn texto" href="#/panel/participantes">← Participantes</a>
@@ -466,31 +521,47 @@ async function cargarPanel(a,b,c){
         <p class="mini">${esc(e.texto)}</p></div>`).join("")
         : '<p class="mini tenue">Esta participante aún no ha escrito en su diario.</p>';
     }catch(err){ cont.innerHTML = errDB(err); }
+  } else if(a==="ficha" && c==="sesiones"){
+    const cs=document.getElementById("ad-sesiones");
+    if(cs){ try{ const ss=await window.MiDB.listSesiones(b);
+      cs.innerHTML = "<h3>Sesiones agendadas</h3>" + (ss.length
+        ? ss.map(x=>`<p class="mini">${esc(x.fecha)} ${esc(x.hora||"")} ${x.enlace?'· <a href="'+esc(x.enlace)+'" target="_blank" rel="noopener">Meet</a>':''}</p>`).join("")
+        : '<p class="mini tenue">Ninguna todavía.</p>');
+    }catch(err){ cs.innerHTML = errDB(err); } }
+    const cr=document.getElementById("ad-solicitudes");
+    if(cr){ try{ const rs=await window.MiDB.listSolicitudes(b);
+      cr.innerHTML = "<h3>Solicitudes de la participante</h3>" + (rs.length
+        ? rs.map(r=>`<p class="mini">${esc(r.dia)} ${esc(r.hora||"")} <span class="pill">${esc(r.estado||"")}</span>${r.comentario?"<br><span class='tenue'>"+esc(r.comentario)+"</span>":""}</p>`).join("")
+        : '<p class="mini tenue">Sin solicitudes.</p>');
+    }catch(err){ cr.innerHTML = errDB(err); } }
   }
+}
+function adAgendar(uid){
+  const fecha=document.getElementById("ad-fecha").value.trim();
+  const hora=document.getElementById("ad-hora").value.trim();
+  const enlace=document.getElementById("ad-enlace").value.trim();
+  const msg=document.getElementById("ad-msg");
+  if(!fecha){ msg.textContent="Escribe al menos la fecha."; return; }
+  window.MiDB.addSesion(uid,{ fecha, hora, enlace })
+    .then(()=>{ msg.textContent="Sesión guardada. La participante ya la verá en su Inicio.";
+      document.getElementById("ad-fecha").value=""; document.getElementById("ad-hora").value=""; document.getElementById("ad-enlace").value="";
+      cargarPanel("ficha", uid, "sesiones"); })
+    .catch(()=>{ msg.textContent="No se pudo guardar."; });
 }
 
 function panAgenda(){
   return panelShell("panel/agenda", `
     <div class="enc"><h1>Agenda</h1></div>
-    <div class="card"><p class="mini tenue">Comprueba también tu agenda principal: la videollamada se coordina y se realiza fuera de la app.</p>
-      <table class="tabla"><tbody>
-      <tr><td>Lun 8</td><td>—</td></tr>
-      <tr><td>Mar 9</td><td>5:00 p. m. · Lucía</td></tr>
-      <tr><td>Jue 11</td><td>10:00 a. m. · Marta</td></tr></tbody></table></div>`);
+    <div class="card"><p class="mini">Cada sesión se agenda dentro de la ficha de la participante, en la pestaña <strong>Sesiones</strong>, donde pones la fecha y el enlace de Meet.</p>
+      <a class="btn sec" href="#/panel/participantes">Ir a participantes</a></div>
+    <div class="card"><p class="mini tenue">La videollamada se realiza en Meet, fuera de la app.</p></div>`);
 }
 
 function panAsignaciones(){
   return panelShell("panel/asignaciones", `
     <div class="enc"><h1>Asignaciones</h1></div>
-    <div class="card">
-      <label>Plantilla aprobada</label>
-      <select><option>Reconocer lo que necesito</option><option>Identificar mis límites</option></select>
-      <label>Participante</label>
-      <select>${PARTICIPANTES.map(p=>`<option>${p.nombre}</option>`).join("")}</select>
-      <label>Visibilidad</label>
-      <select><option>Uso privado (ves solo el estado)</option><option>Con entrega (ves sus respuestas)</option></select>
-      <a class="btn" onclick="alert('Vista previa como la verá ella, y asignar (demostración).')">Revisar y asignar</a>
-    </div>`);
+    <div class="card"><p class="mini">Asignar ejercicios a cada participante se construirá en la siguiente iteración. Por ahora, lo que ya funciona de verdad es el <strong>diario</strong> y las <strong>sesiones</strong> (desde cada ficha).</p>
+      <a class="btn sec" href="#/panel/participantes">Ir a participantes</a></div>`);
 }
 
 function panRecursos(){
@@ -539,6 +610,10 @@ function pRegistro(){
     ${marcaLogin()}
     <h2 style="text-align:center">Crear cuenta</h2>
     <form onsubmit="hacerRegistro(event)">
+      <label>Nombre</label>
+      <input type="text" name="nombre" required placeholder="Tu nombre">
+      <label>Apellido</label>
+      <input type="text" name="apellido" placeholder="Tu apellido">
       <label>Correo</label>
       <input type="email" name="email" autocomplete="username" required placeholder="tucorreo@ejemplo.com">
       <label>Contraseña <span class="op">(mínimo 6 caracteres)</span></label>
@@ -556,7 +631,8 @@ async function hacerRegistro(ev){
   err.style.padding="0"; err.textContent="";
   const btn=f.querySelector("button"); btn.disabled=true;
   try{
-    await window.MiAuth.signUp(f.email.value.trim(), f.pwd.value);
+    const cred = await window.MiAuth.signUp(f.email.value.trim(), f.pwd.value);
+    try{ await window.MiDB.setPerfil(cred.user.uid, { nombre:f.nombre.value.trim(), apellido:f.apellido.value.trim() }); }catch(e2){}
   }catch(e){
     err.style.padding="8px 10px";
     err.textContent = e.code==="auth/email-already-in-use" ? "Ya existe una cuenta con ese correo."
@@ -611,6 +687,13 @@ async function cerrarSesion(){
   try{ await window.MiAuth.signOut(); }catch(e){}
   estado.obVisto=false; location.hash="#/entrar";
 }
+function terminarOnboarding(){
+  const uid = window.MiAuth && window.MiAuth.user && window.MiAuth.user.uid;
+  estado.obVisto = true;
+  if(uid){ try{ localStorage.setItem("miesp_ob_"+uid, "1"); }catch(e){}
+    if(window.MiDB) window.MiDB.setPerfil(uid, { onboarding:true }).catch(()=>{}); }
+  go("#/inicio");
+}
 
 // ---------- ROUTER ----------
 const PUBLICOS = ["entrar","registro","recuperar","ayuda"];
@@ -620,6 +703,7 @@ function render(){
   const h = (location.hash || "").replace(/^#\//,"");
   const [sec, a, b, c] = h.split("/");
   if(!A || !A.ready){ document.getElementById("root").innerHTML = pantallaCarga(); return; }
+  if(A.user){ try{ if(localStorage.getItem("miesp_ob_"+A.user.uid)) estado.obVisto=true; }catch(e){} }
   if(!A.user && !PUBLICOS.includes(sec)){ location.hash="#/entrar"; return; }
   if(A.user && (sec==="" || sec==="entrar")){ location.hash = estado.obVisto ? "#/inicio" : "#/bienvenida/1"; return; }
   let html;

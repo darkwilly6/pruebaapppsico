@@ -50,6 +50,22 @@ window.MiAuth = {
 window.MiDB = {
   setNombre: (uid, nombre) =>
     setDoc(doc(db, "participantes", uid), { nombre }, { merge: true }),
+  setPerfil: (uid, data) =>
+    setDoc(doc(db, "participantes", uid), data, { merge: true }),
+  addSesion: (uid, s) =>
+    addDoc(collection(db, "participantes", uid, "sesiones"),
+      { fecha: s.fecha || "", hora: s.hora || "", enlace: s.enlace || "", estado: "confirmada", creado: serverTimestamp() }),
+  listSesiones: async (uid) => {
+    const q = query(collection(db, "participantes", uid, "sesiones"), orderBy("creado", "desc"));
+    const s = await getDocs(q); return s.docs.map((d) => ({ id: d.id, ...d.data() }));
+  },
+  addSolicitud: (uid, r) =>
+    addDoc(collection(db, "participantes", uid, "solicitudes"),
+      { tipo: r.tipo || "agendar", dia: r.dia || "", hora: r.hora || "", comentario: r.comentario || "", estado: "pendiente", creado: serverTimestamp() }),
+  listSolicitudes: async (uid) => {
+    const q = query(collection(db, "participantes", uid, "solicitudes"), orderBy("creado", "desc"));
+    const s = await getDocs(q); return s.docs.map((d) => ({ id: d.id, ...d.data() }));
+  },
   getPerfil: async (uid) => {
     const d = await getDoc(doc(db, "participantes", uid));
     return d.exists() ? { uid, ...d.data() } : null;

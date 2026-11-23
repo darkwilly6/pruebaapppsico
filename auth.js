@@ -3,8 +3,9 @@
 // La protección real se hace con Security Rules y App Check, no ocultando esta clave.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
-  getAuth, signInWithEmailAndPassword, signOut,
-  onAuthStateChanged, sendPasswordResetEmail, setPersistence, browserLocalPersistence
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
+  onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification,
+  setPersistence, browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -24,6 +25,11 @@ window.MiAuth = {
   ready: false,
   user: null,
   signIn: (email, pwd) => signInWithEmailAndPassword(auth, email, pwd),
+  signUp: async (email, pwd) => {
+    const cred = await createUserWithEmailAndPassword(auth, email, pwd);
+    try { await sendEmailVerification(cred.user); } catch (e) {}
+    return cred;
+  },
   signOut: () => signOut(auth),
   reset: (email) => sendPasswordResetEmail(auth, email),
 };

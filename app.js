@@ -60,7 +60,7 @@ function shell(ruta, contenido){
   return `
   <div class="app">
     <header class="topbar">
-      <div class="marca"><img src="assets/icono-mi-espacio.png" alt="">Mi Espacio</div>
+      <div class="marca"><img src="assets/icono-mi-espacio.webp" alt="">Mi Espacio</div>
       <div class="topbar-acc">
         <a class="icono-btn" href="#/sesiones" aria-label="Mis sesiones">${svg(I.sesion)}</a>
         <a class="icono-btn" href="#/perfil" aria-label="Perfil y privacidad">${svg(I.perfil)}</a>
@@ -93,7 +93,7 @@ function pInicio(){
     <div>
       <div class="enc"><h1>Hola, ${esc(p.nombre)}</h1>
         <p class="tenue">Método Emperatriz · ${p.plan} · Sesión ${p.sesion} de ${p.total}</p></div>
-      <div class="banner"><img src="assets/banner-mi-espacio.png" alt=""></div>
+      <div class="banner"><img src="assets/banner-mi-espacio.webp" alt=""></div>
       <div class="card destacada">
         <span class="etq rosa">Tu próxima sesión</span>
         <h3 style="margin:8px 0 2px">Martes 9 de marzo · 5:00 p. m.</h3>
@@ -299,9 +299,9 @@ function pAyuda(){
 
 // ---- Onboarding ----
 const OB = [
-  ["assets/onboarding-01-espacio.png","Tu espacio para volver a ti","Aquí encuentras tus sesiones, tus ejercicios y tus recursos en un solo lugar."],
-  ["assets/onboarding-02-emociones.png","Comprenderte también es avanzar","Puedes escribir cuando te resulte útil. No es obligatorio y no hay una forma correcta."],
-  ["assets/onboarding-03-proceso.png","Cada paso tiene su propio valor","Avanza a tu ritmo. Aquí no hay calificaciones ni comparaciones."],
+  ["assets/onboarding-01-espacio.webp","Tu espacio para volver a ti","Aquí encuentras tus sesiones, tus ejercicios y tus recursos en un solo lugar."],
+  ["assets/onboarding-02-emociones.webp","Comprenderte también es avanzar","Puedes escribir cuando te resulte útil. No es obligatorio y no hay una forma correcta."],
+  ["assets/onboarding-03-proceso.webp","Cada paso tiene su propio valor","Avanza a tu ritmo. Aquí no hay calificaciones ni comparaciones."],
 ];
 function pOnboarding(paso){
   paso = +paso || 1;
@@ -349,7 +349,7 @@ function panelShell(sub, cont){
   return `
   <div class="app">
     <header class="panel-head">
-      <div class="marca"><img src="assets/icono-mi-espacio.png" alt="">Panel · Diana Ayala</div>
+      <div class="marca"><img src="assets/icono-mi-espacio.webp" alt="">Panel · Diana Ayala</div>
       <a class="salida" href="#/perfil">Salir del panel (demo)</a>
     </header>
     <div class="cuerpo">
@@ -468,7 +468,7 @@ function pantallaCarga(){
   return `<div style="min-height:70vh;display:grid;place-items:center;color:var(--tinta2)"><p>Cargando…</p></div>`;
 }
 function marcaLogin(){
-  return `<div style="text-align:center;margin-bottom:18px"><img src="assets/icono-mi-espacio.png" alt="" style="width:72px;margin:0 auto 8px"><h1>Mi Espacio</h1><p class="tenue">Tu espacio para volver a ti</p></div>`;
+  return `<div style="text-align:center;margin-bottom:18px"><img src="assets/icono-mi-espacio.webp" alt="" style="width:72px;margin:0 auto 8px"><h1>Mi Espacio</h1><p class="tenue">Tu espacio para volver a ti</p></div>`;
 }
 function pLogin(){
   return `<div class="ob"><div class="ob-cont">
@@ -482,9 +482,46 @@ function pLogin(){
       <button class="btn bloque" type="submit" style="margin-top:14px">Entrar</button>
     </form>
     <p class="mini" style="text-align:center;margin-top:12px"><a href="#/recuperar">¿Olvidaste tu contraseña?</a></p>
-    <p class="mini tenue" style="text-align:center">Tu cuenta la crea Diana por invitación.</p>
+    <p class="mini" style="text-align:center">¿No tienes cuenta? <a href="#/registro">Crear una</a></p>
+    <p class="mini tenue" style="text-align:center">En la versión real, el acceso será por invitación de Diana.</p>
+    <p class="mini tenue" style="text-align:center">Versión de prueba con contenido de ejemplo.</p>
     <p class="mini" style="text-align:center"><a href="#/ayuda">Ayuda</a></p>
   </div></div>`;
+}
+function pRegistro(){
+  return `<div class="ob"><div class="ob-cont">
+    ${marcaLogin()}
+    <h2 style="text-align:center">Crear cuenta</h2>
+    <form onsubmit="hacerRegistro(event)">
+      <label>Correo</label>
+      <input type="email" name="email" autocomplete="username" required placeholder="tucorreo@ejemplo.com">
+      <label>Contraseña <span class="op">(mínimo 6 caracteres)</span></label>
+      <input type="password" name="pwd" autocomplete="new-password" minlength="6" required>
+      <p id="reg-err" role="alert" style="color:var(--negro);background:var(--rosa35);border-radius:10px;margin:10px 0 0"></p>
+      <button class="btn bloque" type="submit" style="margin-top:14px">Crear cuenta</button>
+    </form>
+    <p class="mini" style="text-align:center;margin-top:12px">¿Ya tienes cuenta? <a href="#/entrar">Entrar</a></p>
+    <p class="mini tenue" style="text-align:center">En la versión real, el acceso será por invitación de Diana.</p>
+  </div></div>`;
+}
+async function hacerRegistro(ev){
+  ev.preventDefault();
+  const f=ev.target, err=document.getElementById("reg-err");
+  err.style.padding="0"; err.textContent="";
+  const btn=f.querySelector("button"); btn.disabled=true;
+  try{
+    await window.MiAuth.signUp(f.email.value.trim(), f.pwd.value);
+  }catch(e){
+    err.style.padding="8px 10px";
+    err.textContent = e.code==="auth/email-already-in-use" ? "Ya existe una cuenta con ese correo."
+      : e.code==="auth/weak-password" ? "La contraseña debe tener al menos 6 caracteres."
+      : e.code==="auth/invalid-email" ? "Ese correo no es válido."
+      : e.code==="auth/unauthorized-domain" ? "Este dominio aún no está autorizado en Firebase."
+      : e.code==="auth/network-request-failed" ? "Sin conexión con el servidor."
+      : "No se pudo crear la cuenta.";
+    console.warn("registro:", e.code, e.message);
+    btn.disabled=false;
+  }
 }
 function pRecuperar(){
   return `<div class="ob"><div class="ob-cont">
@@ -530,7 +567,7 @@ async function cerrarSesion(){
 }
 
 // ---------- ROUTER ----------
-const PUBLICOS = ["entrar","recuperar","ayuda"];
+const PUBLICOS = ["entrar","registro","recuperar","ayuda"];
 let cargaAviso=false;
 function render(){
   const A = window.MiAuth;
@@ -559,6 +596,7 @@ function render(){
   if(A.user && !estado.obVisto && sec!=="bienvenida" && !PUBLICOS.includes(sec)){ location.hash="#/bienvenida/1"; return; }
   switch(sec){
     case "entrar": html = pLogin(); break;
+    case "registro": html = pRegistro(); break;
     case "recuperar": html = pRecuperar(); break;
     case "bienvenida": html = pOnboarding(a); break;
     case "inicio": html = pInicio(); break;

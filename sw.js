@@ -1,11 +1,11 @@
 // Mi Espacio — service worker del prototipo. Cachea el shell para que sea instalable y funcione sin conexión.
-const CACHE = "miespacio-proto-v2";
+const CACHE = "miespacio-proto-v3";
 const ASSETS = [
   "./","index.html","estilos.css","app.js","auth.js","manifest.json",
   "icons/icon-192.png","icons/icon-512.png","icons/icon-180.png",
-  "assets/banner-mi-espacio.png","assets/onboarding-01-espacio.png",
-  "assets/onboarding-02-emociones.png","assets/onboarding-03-proceso.png",
-  "assets/icono-mi-espacio.png"
+  "assets/banner-mi-espacio.webp","assets/onboarding-01-espacio.webp",
+  "assets/onboarding-02-emociones.webp","assets/onboarding-03-proceso.webp",
+  "assets/icono-mi-espacio.webp"
 ];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
